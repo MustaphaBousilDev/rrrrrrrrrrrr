@@ -2,7 +2,7 @@
     
     
 <?php 
-$data_source_name='mysql:host=localhost;dbname=todos';
+$data_source_name='mysql:host=localhost;dbname=gggg';
 $user='root';
 $pass='';
 $option=array(

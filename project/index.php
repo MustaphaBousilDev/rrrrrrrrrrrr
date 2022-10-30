@@ -22,17 +22,47 @@
 	include 'database.php';
 	$do=isset($_GET['do']) ? $_GET['do'] : '';
 	$action="index.php?do=Insert";
-	if($do=="Add"){
-        $action="index.php?do=Insert";
-	}else if($do=="Edit"){
-		$id=isset($_GET['todo_id'])  ? intval($_GET['todo_id']) : '';
-		$action="index.php?do=Update";
-        $stmt=$conn->prepare("SELECT * FROM tasks WHERE ID=? LIMIT 1");
-		$stmt->execute(array($id));
-		$row=$stmt->fetch();
-		$count=$stmt->rowCount();
-	}else if($do=='Insert'){
-        if($_SERVER['REQUEST_METHOD']=='POST'){
+	if($do=='Insert'){
+        
+	}
+	else if($do=="Update"){
+		
+	}
+	function delete(){
+		global  $conn;
+		$id=$_POST['id'];
+		$stmt=$conn->prepare("DELETE FROM tasks WHERE ID=:id");
+		$stmt->bindParam(':id',$id);
+		$stmt->execute();
+		echo "<script>location.href='index.php'</script>";
+		echo "<script>location.reload()</script>";
+	}
+	function update(){
+		global  $conn;
+		if($_SERVER['REQUEST_METHOD']=='POST'){
+			$id=$_POST['id'];
+            $title=$_POST['title'];
+			$description=$_POST['description'];
+			$date=$_POST['date'];
+			$type=$_POST['task-type'];
+			$status=$_POST['status'];
+			$priority=$_POST['task-priority'];
+			$Error_msg=array();
+			if(empty($title)){$Error_msg[]='Title Cant Be Empty';}
+			if(empty($description)){$Error_msg[]='Description Cant Be Empty';}
+			if(empty($date)){$Error_msg[]='date Cant Be Empty';}
+			if($priority==""){$Error_msg[]='Need Choose Preiority';}
+			if($status==""){$Error_msg[]='Need Select Status';}
+            foreach($Error_msg as $err){echo "<div class='alert alert-danger'>".$err."</div>";}
+                $stmt_up=$conn->prepare('UPDATE tasks SET title=? , description=? , task_datetime=?, type_id=? , status_id=? ,priority_id=?  WHERE ID=?');
+				$stmt_up->execute(array($title,$description,$date,$type,$status,$priority,$id));
+				echo "<script>location.href='index.php'</script>";
+                echo "<script>location.reload()</script>";		
+		}
+	}
+	function add(){
+		global  $conn;
+		if($_SERVER['REQUEST_METHOD']=='POST'){
             $title=$_POST['title'];
 			$description=$_POST['description'];
 			$date=$_POST['date'];
@@ -54,7 +84,7 @@
                 echo "<div class='alert alert-danger'>".$err."</div>";
 			}
 			if(empty($Error_msg)){
-                $stmt=$conn->prepare("INSERT INTO tasks (title,description,date,typee_id,statuse_id,priority_id) VALUES (:title,:description,:date,:type_id,:status_id,:priority_id)");
+                $stmt=$conn->prepare("INSERT INTO tasks (title,description,task_datetime,type_id,status_id,priority_id) VALUES (:title,:description,:date,:type_id,:status_id,:priority_id)");
 				$stmt->execute(array(
 					'title' => $title ,
 					'description' => $description,
@@ -71,40 +101,9 @@
 			echo "<div class='alert alert-danger'>Sorry We Can Insert this data in database</div>";
 		}
 	}
-	else if($do=="Update"){
-		if($_SERVER['REQUEST_METHOD']=='POST'){
-			$id=$_POST['id'];
-            $title=$_POST['title'];
-			$description=$_POST['description'];
-			$date=$_POST['date'];
-			$type=$_POST['task-type'];
-			$status=$_POST['status'];
-			$priority=$_POST['task-priority'];
-			$Error_msg=array();
-			if(empty($title)){$Error_msg[]='Title Cant Be Empty';}
-			if(empty($description)){$Error_msg[]='Description Cant Be Empty';}
-			if(empty($date)){$Error_msg[]='date Cant Be Empty';}
-			if($priority==""){$Error_msg[]='Need Choose Preiority';}
-			if($status==""){$Error_msg[]='Need Select Status';}
-            foreach($Error_msg as $err){echo "<div class='alert alert-danger'>".$err."</div>";}
-                $stmt_up=$conn->prepare('UPDATE tasks SET title=? , description=? , date=?, typee_id=? , statuse_id=? ,priority_id=?  WHERE ID=?');
-				$stmt_up->execute(array($title,$description,$date,$type,$status,$priority,$id));
-				echo "<script>location.href='index.php'</script>";
-                echo "<script>location.reload()</script>";		
-		}
-	}
-	function delete(){
-		global  $conn;
-		$id=$_POST['id'];
-		$stmt=$conn->prepare("DELETE FROM tasks WHERE ID=:id");
-		$stmt->bindParam(':id',$id);
-		$stmt->execute();
-		echo "<script>location.href='index.php'</script>";
-		echo "<script>location.reload()</script>";
-	}
-	if(isset($_POST['delete'])){
-        delete();
-	}
+	if(isset($_POST['delete'])){delete();}
+	if(isset($_POST['update'])){update();}
+	if(isset($_POST['save'])){add();}
 	#echo $do;
 ?>
 	<!-- BEGIN #loader -->
@@ -357,33 +356,33 @@
 							<?php
 								//PHP CODE HERE
 								//DATA FROM getTasks() FUNCTION
-                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,status.name AS status__name ,priority.name AS 
-								priority__name , type.name AS type__name FROM tasks INNER JOIN status 
-								ON status.id=tasks.statuse_id INNER JOIN priority ON priority.id=tasks.priority_id 
-								INNER JOIN type ON type.id=tasks.typee_id WHERE statuse_id=1');
+                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,statu_s.name AS status__name ,priorities.name AS 
+								priority__name , types.name AS type__name FROM tasks INNER JOIN statu_s 
+								ON statu_s.id=tasks.status_id INNER JOIN priorities ON priorities.id=tasks.priority_id 
+								INNER JOIN types ON types.id=tasks.type_id WHERE status_id=1');
 			                    $stmt_add_done->execute();
 			                    $todo_all_done=$stmt_add_done->fetchAll();
 							?>
 								<?php if(!empty($todo_all_done)):?>
                                     <?php foreach($todo_all_done as $todo): ?>
-										<button data-task="To Do"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['ID']?>')" id="<?=$todo['ID']?>" data-index="<?=$todo['ID']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
+										<button data-task="<?=$todo['status_id']?>"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['id']?>')" id="<?=$todo['id']?>" data-index="<?=$todo['id']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
 								        <div class="col-1">
 									    <i style="font-size: 20px;" class="bi bi-question-circle text-success"></i>
 								        </div>
 								        <div class="col-11">
 									    <h6 class="card-title mt-1 title-button" data-task="<?=$todo['title']?>"><?=$todo['title']?></h6>
 									    <div class="">
-										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['date']?>"># created in <?=$todo['date']?></div>
+										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['task_datetime']?>"># created in <?=$todo['task_datetime']?></div>
 										<div data-task="<?=$todo['description']?>"  style="font-size: 11px;" class="text-dark description-button" title="There is hardly anything more frustrating than having to look for current requirements in tens of comments under the actual description or having to decide which commenter is actually authorized to change the requirements. The goal here is to keep all the up-to-date requirements and details in the main/primary description of a task. Even though the information in comments may affect initial criteria, just update this primary description accordingly.">
 								        <?=$todo['description']?>
 									    </div>
 									    </div>
 									    <div class="d-flex justify-content-between">
 									    <div class="">
-										<span style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type__name']?>">
+										<span id="<?=$todo['id']?>type" style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type_id']?>">
 										    <?=$todo['type__name']?>
 									    </span>
-										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority__name']?>">
+										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority_id']?>">
 										    <?=$todo['priority__name'] ?>
 									    </span>
 									    </div>
@@ -412,33 +411,33 @@
 							<?php
 								//PHP CODE HERE
 								//DATA FROM getTasks() FUNCTION
-                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,status.name AS status__name ,priority.name AS 
-								priority__name , type.name AS type__name FROM tasks INNER JOIN status 
-								ON status.id=tasks.statuse_id INNER JOIN priority ON priority.id=tasks.priority_id 
-								INNER JOIN type ON type.id=tasks.typee_id WHERE statuse_id=2');
+                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,statu_s.name AS status__name ,priorities.name AS 
+								priority__name , types.name AS type__name FROM tasks INNER JOIN statu_s 
+								ON statu_s.id=tasks.status_id INNER JOIN priorities ON priorities.id=tasks.priority_id 
+								INNER JOIN types ON types.id=tasks.type_id WHERE status_id=2');
 			                    $stmt_add_done->execute();
 			                    $todo_all_done=$stmt_add_done->fetchAll();
 							?>
 								<?php if(!empty($todo_all_done)):?>
                                     <?php foreach($todo_all_done as $todo): ?>
-                                        <button data-task="In Progress"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['ID']?>')" id="<?=$todo['ID']?>" data-index="<?=$todo['ID']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
+                                        <button data-task="<?=$todo['status_id']?>"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['id']?>')" id="<?=$todo['id']?>" data-index="<?=$todo['id']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
 								        <div class="col-1">
 									    <i style="font-size: 20px;" class="bi bi-question-circle text-success"></i>
 								        </div>
 								        <div class="col-11">
 									    <h6 class="card-title mt-1 title-button" data-task="<?=$todo['title']?>"><?=$todo['title']?></h6>
 									    <div class="">
-										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['date']?>"># created in <?=$todo['date']?></div>
+										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['task_datetime']?>"># created in <?=$todo['task_datetime']?></div>
 										<div data-task="<?=$todo['description']?>"  style="font-size: 11px;" class="text-dark description-button" title="There is hardly anything more frustrating than having to look for current requirements in tens of comments under the actual description or having to decide which commenter is actually authorized to change the requirements. The goal here is to keep all the up-to-date requirements and details in the main/primary description of a task. Even though the information in comments may affect initial criteria, just update this primary description accordingly.">
 								        <?=$todo['description']?>
 									    </div>
 									    </div>
 									    <div class="d-flex justify-content-between">
 									    <div class="">
-										<span style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type__name']?>">
+										<span id="<?=$todo['id']?>type" style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type_id']?>">
 										    <?=$todo['type__name']?>
 									    </span>
-										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority__name']?>">
+										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority_id']?>">
 										    <?=$todo['priority__name'] ?>
 									    </span>
 									    </div>
@@ -466,33 +465,33 @@
 							<?php
 								//PHP CODE HERE
 								//DATA FROM getTasks() FUNCTION
-                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,status.name AS status__name ,priority.name AS 
-								priority__name , type.name AS type__name FROM tasks INNER JOIN status 
-								ON status.id=tasks.statuse_id INNER JOIN priority ON priority.id=tasks.priority_id 
-								INNER JOIN type ON type.id=tasks.typee_id WHERE statuse_id=3');
+                                $stmt_add_done=$conn->prepare('SELECT tasks.* ,statu_s.name AS status__name ,priorities.name AS 
+								priority__name , types.name AS type__name FROM tasks INNER JOIN statu_s 
+								ON statu_s.id=tasks.status_id INNER JOIN priorities ON priorities.id=tasks.priority_id 
+								INNER JOIN types ON types.id=tasks.type_id WHERE status_id=3');
 			                    $stmt_add_done->execute();
 			                    $todo_all_done=$stmt_add_done->fetchAll();
 							?>
 								<?php if(!empty($todo_all_done)):?>
                                     <?php foreach($todo_all_done as $todo): ?>
-                                        <button data-task="done"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['ID']?>')" id="<?=$todo['ID']?>" data-index="<?=$todo['ID']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
+                                        <button data-task="<?=$todo['status_id']?>"  type="button" data-bs-toggle="modal" data-bs-target="#modal-task" onclick="get_id('<?=$todo['id']?>')" id="<?=$todo['id']?>" data-index="<?=$todo['id']?>" class="task border-0 bg-white text-start d-flex border-bottom w-100 p-10px">
 								        <div class="col-1">
 									    <i style="font-size: 20px;" class="bi bi-question-circle text-success"></i>
 								        </div>
 								        <div class="col-11">
 									    <h6 class="card-title mt-1 title-button" data-task="<?=$todo['title']?>"><?=$todo['title']?></h6>
 									    <div class="">
-										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['date']?>"># created in <?=$todo['date']?></div>
+										<div style="font-size:10px;" class="text-gray" data-task="<?=$todo['task_datetime']?>"># created in <?=$todo['task_datetime']?></div>
 										<div data-task="<?=$todo['description']?>"  style="font-size: 11px;" class="text-dark description-button" title="There is hardly anything more frustrating than having to look for current requirements in tens of comments under the actual description or having to decide which commenter is actually authorized to change the requirements. The goal here is to keep all the up-to-date requirements and details in the main/primary description of a task. Even though the information in comments may affect initial criteria, just update this primary description accordingly.">
 								        <?=$todo['description']?>
 									    </div>
 									    </div>
 									    <div class="d-flex justify-content-between">
 									    <div class="">
-										<span style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type__name']?>">
+										<span id="<?=$todo['id']?>type" style="font-size: 8px;" class="btn-xs btn-primary py-1 px-2 rounded type-button" data-task="<?=$todo['type_id']?>">
 										    <?=$todo['type__name']?>
 									    </span>
-										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority__name']?>">
+										<span style="font-size: 8px;" class="btn-xs btn-light text-black py-1 px-2 rounded priority-button" data-task="<?=$todo['priority_id']?>">
 										    <?=$todo['priority__name'] ?>
 									    </span>
 									    </div>
@@ -541,7 +540,7 @@
 								<label class="form-label">Type</label>
 								<div class="ms-3">
 									<div class="form-check mb-1">
-										<input class="form-check-input" name="task-type" type="radio" value="1" id="task-type-feature"/>
+										<input  class="form-check-input" name="task-type" type="radio" value="1" id="task-type-feature"/>
 										<label class="form-check-label" for="task-type-feature">Feature</label>
 									</div>
 									<div class="form-check">
@@ -600,26 +599,35 @@
 	<script type="text/javascript">
 		//reloadTasks();
         var v;
+		var type;
 		function get_id(id){
             let id_btn=document.getElementById(`${id}`).getAttribute('id');
 			console.log(id_btn)
-			document.querySelector('#form-task').setAttribute('action','index.php?do=Update')
+			document.querySelector('#form-task').setAttribute('action','index.php')
 			console.log(document.querySelector('#form-task'));
 			document.getElementById('task-id').value=id_btn;
 			console.log("ggg")
 			console.log(document.getElementById('task-id'))
 			v=id_btn;
-
+			type = document.getElementById(`${id}type`).dataset.task;
+			type=parseInt(type)
+			if(type==1){
+				document.getElementById('task-type-feature').checked=true
+			}
+			 else{
+                document.getElementById('task-type-bug').checked=true
+			 } 
+			console.log(`dmlfdfmldfmldfldmfld${type}`)
+            document.getElementById('task-status').value=document.getElementById(`${id}`).dataset.task 
+			document.getElementById('task-priority').value=document.querySelector('.priority-button').dataset.task
 			document.getElementById('task-title').value=document.querySelector('.title-button').dataset.task;
 			document.getElementById('task-description').value=document.querySelector('.description-button').dataset.task;
-			document.getElementById('task-date').value=document.querySelector('.date-button').dataset.task;
-			document.getElementById('task-title').value=document.querySelector('.title-button').dataset.task;
+			document.getElementById('task-date')=document.querySelector('.date-button').dataset.task;
 			console.log(document.getElementById('task-title').value)
-			
-			
 		}
 		document.getElementById('add').addEventListener('click',function(e){
-			document.querySelector('#form-task').setAttribute('action','index.php?do=Insert')
+			document.querySelector('#form-task').setAttribute('action','index.php')
+			document.querySelector('#form-task').reset()
 			console.log(document.querySelector('form'))
 
 		})
